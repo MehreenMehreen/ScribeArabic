@@ -47,4 +47,4 @@ By default, this software is intended to transcribe Arabic pages, however, it ca
 Documentation for the tool is here [manual.md](manual.md)
 
 ## Notes for administrators
-The settings.py file in the img_annotation directory contains the name of the configuration file to use. By default the server will look for the file in the annotate/static directory. Administrators can add the names of the users using this configuration file. They can also specify the names of tags and their highlight color using this configuration file.
+The `settings.py` file in the img_annotation directory contains the name of the configuration file to use. By default the server will look for the file in the `annotate/static` directory. Administrators can add the names of the users using this configuration file. They can also specify the names of tags and their highlight color using this configuration file. Various configuration files are present in `annotate/static` folder. 
