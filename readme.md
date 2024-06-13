@@ -3,9 +3,7 @@ This is a repository for the ScribeArabic annotation software used for creating 
 
 ## About the scribeArabic software
 
-Multiple users can work on annotating and transcribing images. However, they CANNOT work simultaneously from the same directory or on the same image file. For each user a separte annotation file is created. Hence, we recommend that each user works from their own directory.
-
-The repository contains the code for the annotation tool used to label this dataset. The img_annotation folder contains the ScribeArabic Django app.
+Multiple users can work on annotating and transcribing images. However, they CANNOT work simultaneously from the same directory or on the same image file. For each user a separte annotation file is created. Hence, we recommend that each user works from their own directory. The img_annotation folder contains the ScribeArabic Django app.
 
 By default, this software is intended to transcribe Arabic pages, however, it can easily be tailored for other languages. Just change the language to the desired language in transcribeBlock.js and tagBlock.js. It can also be easily modified to label images from most of computer vision domains.
 
