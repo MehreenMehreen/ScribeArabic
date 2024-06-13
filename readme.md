@@ -42,7 +42,7 @@ python manage.py runserver
 Open a browser and enter the URL:
 
 ```
-http://localhost:8000/starttagging
+http://localhost:8000/starttagging 
 ```
 
 ## Notes for administrators
