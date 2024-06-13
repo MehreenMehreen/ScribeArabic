@@ -49,4 +49,4 @@ http://localhost:8000/starttagging
 ### YAML Config Files
 The `settings.py` file in the img_annotation directory contains the name of the configuration file to use. By default the server will look for the file in the `annotate/static` directory. Administrators can:
 - Add the names of the users using this configuration file.
-- Specify the names of tags and their highlight color using this configuration file. Various configuration files are present in `annotate/static` folder. We used the tags and user names `config.yaml` to create the Muharaf dataset.
+- Specify the names of tags and their highlight color using this configuration file. Various configuration files are present in `annotate/static` folder. We used the tags and user names `config.yaml` to create the [Muharaf dataset](https://github.com/MehreenMehreen/muharaf).
