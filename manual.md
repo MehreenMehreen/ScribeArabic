@@ -47,7 +47,7 @@ If you have new images that you would like to upload you can use the upload url.
 
 ## Start Annotating
 
-An annotation is a transcription of an image of text and can also be tagged.
+An annotation in a document image is a bounding polygon around a text line. The content/text of the text line is called its transcription.
 
 Once you have the server running using the [readme.md](readme.md), you can visit this url: http://localhost:8000/starttagging
 
