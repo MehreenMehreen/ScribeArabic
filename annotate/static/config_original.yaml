@@ -23,3 +23,5 @@ tag_dictionary: { 'Region_paragraph': 'rgba(128, 28, 255, 0.1)',
                   'Orient_top_bottom': 'rgba(128, 200, 28, 0.1)', 
                   'Orient_bottom_top': 'rgba(128, 200, 28, 0.1)'
                 } 
+ # Full names               
+user_fullnames: { 'carlos': 'Carlos Younes', 'georges': 'Georges Habchi', 'father_joseph': 'Joseph Moukarzel',  'carlosAI': 'Carlos Younes', 'georgesAI': 'Georges Habchi', 'akram': 'Akram Khater', 'mehreen': 'Mehreen Saeed'}

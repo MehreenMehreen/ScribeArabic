@@ -93,10 +93,13 @@
                         <label id="rightImageName" class="form-label" >Right Image name</label>
                         <canvas id="rightCanvas" style="border:1px solid #d3d3d3; width: 100%;">
                         </canvas>    
-                        <label for="writer">Writer:</label>
+                        <label for="writer">Writer:&emsp;&emsp;&emsp;&emsp;</label>
                         <input type="text" id="writer" name="writer" placeholder="Writer">
                         <p></p>
-                        <label for="comment">Comments:</label>
+                        <label for="documentDate">DocumentDate:</label>
+                        <input type="text" id="documentDate" name="documentDate" placeholder="documentDate">
+                        <p></p>                        
+                        <label for="comment">Comments:&emsp;&emsp;</label>
                         <input type="text" id="comment" name="comment" placeholder="Comments">
                         
 
@@ -170,6 +173,7 @@
     let TAG_DICTIONARY = {{tagDictionary|safe}}            
     let TAG_ITEMS = Object.keys(TAG_DICTIONARY);
     let REGION_KEYS = ['Region_Text', 'Region_Header', 'Region_Footer'];
+    //this no longer used
     if (INPUT_JSON.fileList.length > 0 && "time" in INPUT_JSON[INPUT_JSON.fileList[0]])
         TOTAL_TIME = INPUT_JSON[INPUT_JSON.fileList[0]]['time'];
     

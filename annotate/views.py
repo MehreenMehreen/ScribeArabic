@@ -11,9 +11,9 @@ from datetime import datetime
 from pytz import timezone
 import yaml
 
-# TODO: All the indices of tasks and users are hard coded right now
-# PROBLEM: Changing the order of tasks will mess up everything
+
 # 1.6: Added Tag images module
+# 2.0: Reading everything from config file
 APP_DISPALY_LABEL = "ScribeArabic 2.0"
 
 def get_user_list():
@@ -22,24 +22,33 @@ def get_user_list():
         return ['user_1']
     with open(config_file) as fin:
         config = yaml.safe_load(fin)
-    print('config is', config)
+    #print('config is', config)
     user_list = []
     if 'user_list' in config:
         user_list = config['user_list']
     if len(user_list) == 0:
         user_list = ['user_1']
-    return user_list
+    if 'user_fullnames' in config:
+        user_fullnames = config['user_fullnames']
+    else:
+        user_fullnames = dict()
+        for user in user_list:
+            user_fullnames[user] = user
+    
+    return (user_list, user_fullnames)
 
-USER_LIST = get_user_list()
+USER_LIST, USER_FULLNAMES = get_user_list()
+
 #MEHREEN_IND = 4
 #USER_LIST = ["Adrian", "Akram", "Chau-Wai", "Mehreen", "Imran", "Nisarg"]
 #USER_LIST = ["Carlos", "Georges", "Adrian", "Anupam", "Mehreen", "Father_Joseph", "CarlosAI", "GeorgesAI", "Akram"]
 # IMPORTANT: Don't change the order of tasks. See the todo list
-ALL_TASKS = ["Annotate", "Select", "Verify", "View", "Transcribe", "transcribeBlock", "viewEditDistance"]
+#ALL_TASKS = ["Annotate", "Select", "Verify", "View", "Transcribe", "transcribeBlock", "viewEditDistance"]
 ALL_TASKS = ["transcribeBlock"]
-ALL_TASKS_DESCRIPTION = ["Annotate from Directory", "Select Files to Annotate", 
-						"Verify Annotations", "View Files in Directory", "Transcribe Files Line by Line", 
-						"Transcribe Blocks of Text", "View edit distance"]
+ALL_TASKS_DESCRIPTION = ["Transcribe Blocks of Text"]
+#ALL_TASKS_DESCRIPTION = ["Annotate from Directory", "Select Files to Annotate", 
+#						"Verify Annotations", "View Files in Directory", "Transcribe Files Line by Line", 
+#						"Transcribe Blocks of Text", "View edit distance"]
 
 
 ADMIN_TASKS = ALL_TASKS[:]
@@ -113,6 +122,7 @@ def get_json_str(full_filename, to_check_user, task):
 
 
 def serve_homepage(request):		
+	USER_LIST, USER_FULLNAMES = get_user_list()
 	task = "annotate"
 	post_response = "1"
 	dir = directories()
@@ -237,24 +247,30 @@ def serve_homepage(request):
 	user_ind = context["userInd"]
 	task_ind = context["taskInd"] 
 	to_check_user_ind = context["toCheckUserInd"] 
+	user_fullname = USER_LIST[user_ind]
+	if USER_LIST[user_ind] in USER_FULLNAMES:
+	    user_fullname = USER_FULLNAMES[user_fullname]
 	request.session['admin'] = {'user':USER_LIST[user_ind].lower(), 
-                                 'task':ADMIN_TASKS[task_ind ].lower(), 
-                                 'to_check_user':USER_LIST[to_check_user_ind].lower(),
-								 'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
-								 'taskInd': task_ind, 'error':"", 'heading':APP_DISPALY_LABEL}
+                                   'task':ADMIN_TASKS[task_ind ].lower(), 
+                                   'to_check_user':USER_LIST[to_check_user_ind].lower(),
+				   'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
+				   'taskInd': task_ind, 'error':"", 'heading':APP_DISPALY_LABEL, 'user_fullname': user_fullname}
 
 	
 	return HttpResponse(template.render(context, request))
 
 
 def start_serve_image_files(context, request):
-	
+	USER_LIST, USER_FULLNAMES = get_user_list()
 	user_ind = context["userInd"]
 	task_ind = context["taskInd"] 
 	to_check_user_ind = context["toCheckUserInd"] 
 	USER = USER_LIST[user_ind].lower()
 	TASK = ADMIN_TASKS[task_ind].lower()
 	TO_CHECK_USER = USER_LIST[to_check_user_ind].lower()
+	user_fullname = USER
+	if USER in USER_FULLNAMES:
+	    user_fullname = USER_FULLNAMES[user_fullname]
 	directory = os.path.join(settings.STATIC_ROOT, context["dir"])
 	
 	IMAGES = imageFiles()
@@ -267,8 +283,9 @@ def start_serve_image_files(context, request):
 
 	request.session['images'] = IMAGES.get_json_string_for_client()
 	request.session['admin'] = {'user':USER, 'task':TASK, 'to_check_user':TO_CHECK_USER,
-								 'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
-								 'taskInd': task_ind, 'error':"", 'heading':APP_DISPALY_LABEL}
+                                    'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
+                                    'taskInd': task_ind, 'error':"", 'heading':APP_DISPALY_LABEL, 
+                                    'user_fullname': user_fullname}
 	return IMAGES
 
 def create_dummy_admin(task="", error=""):
@@ -283,7 +300,7 @@ def create_dummy_admin(task="", error=""):
 
 	admin = {'user':user, 'task':task, 'to_check_user':user,
 	 'userInd': user_ind, 'toCheckUserInd':user_ind, 
-	 'taskInd': task_ind, 'error':error}
+	 'taskInd': task_ind, 'error':error, 'user_fullname':user}
 	return admin
 
 
@@ -371,80 +388,7 @@ def serve_image_files(request):
 	add_log(admin, IMAGES, 'serve_image/serve_image')
 	return HttpResponse(template.render(context, request))
 
-def view_files(request):
-	
-	admin = None
-	images_json = request.session.get('images', None)
-	admin = request.session.get('admin', None)
-	if images_json is None or admin is None:
-		admin = create_dummy_admin(task="view", 
-									error="Session interrupted in view. Please reload page")
-		IMAGES = imageFiles()
-		request.session['admin'] = admin
-		request.session['images'] = IMAGES.get_json_string_for_client()
-		add_log(admin, IMAGES, 'view/serve_homepage/empty')
-		return redirect(serve_homepage) 
 
-	IMAGES = imageFiles()
-	IMAGES.load_from_json_string(images_json)
-
-	template = get_template('viewTranscription.html')
-
-	if request.method == 'POST':
-		if 'previous' in request.POST:
-			json_obj = json.loads(request.POST['previous'])
-	
-			images_json = json_obj['images_obj']
-			IMAGES = imageFiles()
-			IMAGES.load_from_json_string(images_json)
-			admin = json_obj['admin']
-			_ = IMAGES.get_previous()
-			add_log(admin, IMAGES, 'view/previous')
-		elif 'next' in request.POST:
-			json_obj = json.loads(request.POST['next'])
-	
-			images_json = json_obj['images_obj']
-			IMAGES = imageFiles()
-			IMAGES.load_from_json_string(images_json)
-			admin = json_obj['admin']
-			_ = IMAGES.get_next()
-			add_log(admin, IMAGES, 'view/next')
-		elif 'end' in request.POST:
-			json_obj = json.loads(request.POST['end'])
-	
-			images_json = json_obj['images_obj']
-			IMAGES = imageFiles()
-			IMAGES.load_from_json_string(images_json)
-			add_log(admin, IMAGES, 'view/serve_homepage')
-			return redirect(serve_homepage)
-
-
-	img_file_1 = IMAGES.get_current()
-	img_file_2 = IMAGES.get_file_2()
-	
-
-	json_file_list = IMAGES.get_json_files()
-	json_file_list.sort()
-	json_dict = {"fileList":json_file_list}
-	
-	for ind, f in enumerate(json_file_list):
-	    json_obj = get_json(f)
-	    json_dict[f] = json_obj
-	
-	
-	context = {
-	           "img_file_1": img_file_1,
-		       "img_file_2": img_file_2,
-		       "jsonList": json_dict,
-		       "admin": admin,
-		       "images_obj": IMAGES.get_json_string_for_client(),
-		       "heading": APP_DISPALY_LABEL
-	          }
-
-	add_log(admin, IMAGES, 'view/view')   
-	request.session['admin'] = admin
-	request.session['images'] = IMAGES.get_json_string_for_client()	           
-	return HttpResponse(template.render(context, request))
 
 def get_json_str_and_filename(full_filename, admin):
 	# read file
@@ -573,117 +517,8 @@ def submit_checked_file(jpg_filename, admin):
 
 
 
-def transcribe(request):
-	
-	scroll_position = {"x": 0, "y": 0}
-	
-	checking_flag = request.session.get('checkingMenu', 0)	
-	
-	images_json = request.session.get('images', None)
-	admin = request.session.get('admin', None)
-	
-	if images_json is None or admin is None:
-		admin = create_dummy_admin(task="transcribe", 
-									error="Session interrupted in transcribe. Please reload page")		
-		IMAGES = imageFiles()
-		request.session['admin'] = admin
-		request.session['images'] = IMAGES.get_json_string_for_client()
-		add_log(admin, IMAGES, 'transcribe/serve_homepage/empty')
-		return redirect(serve_homepage) 
 
-	IMAGES = imageFiles()
-	IMAGES.load_from_json_string(images_json)	
-	template = get_template('transcribe.html')
-
-	if request.method == 'POST':
-
-		if 'previous' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'previous')
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			add_log(admin, IMAGES, 'transcribe/previous')            
-			filename = IMAGES.get_previous()
-		elif 'next' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'next')
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			add_log(admin, IMAGES, 'transcribe/next')            
-			filename = IMAGES.get_next()
-		elif 'save' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'save')      
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			add_log(admin, IMAGES, 'transcribe/save')    
-			json_obj = json.loads(request.POST['save'])
-			scroll_position = json_obj['scroll_position']   
-			
-		elif 'end' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'end')      
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			add_log(admin, IMAGES, 'transcribe/serve_homepage')
-			return redirect(serve_homepage)
-		elif 'submit' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'submit')      
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			submit_done, return_error = submit_file(IMAGES.get_current(), admin)
-			if not submit_done:
-				admin['error'] = 'Error submitting: ' + return_error
-				request.session['admin'] = admin
-				request.session['images'] = IMAGES.get_json_string_for_client()
-				add_log(admin, IMAGES, 'transcribe/submit/{}'.format(return_error))
-				return redirect(serve_homepage)
-			else:
-				IMAGES.remove_current()
-				add_log(admin, IMAGES, 'transcribe/submit'+ return_error)
-		elif 'checked' in request.POST:
-			IMAGES, admin, page_json = load_from_response(request, 'checked')      
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			check_done, return_error = submit_checked_file(IMAGES.get_current(), admin)
-			if not check_done:
-				admin['error'] = 'Error submitting checked file: ' + return_error
-				request.session['admin'] = admin
-				request.session['images'] = IMAGES.get_json_string_for_client()
-				add_log(admin, IMAGES, 'transcribe/check/{}'.format(return_error))
-				return redirect(serve_homepage)
-			else:
-				IMAGES.remove_current()
-				add_log(admin, IMAGES, 'transcribe/check' + return_error)				
-
-	if IMAGES.empty_files() == 1:
-		admin['error'] = 'Reached the end. Thank you!'
-		request.session['admin'] = admin
-		request.session['images'] = IMAGES.get_json_string_for_client()
-		add_log(admin, IMAGES, 'transcribe/submit/done')
-		return redirect(serve_homepage)			
-
-	img_file_1 = IMAGES.get_current()
-	img_file_2 = IMAGES.get_current()
-
-	json_file, line_obj = get_json_str_and_filename(img_file_1, admin)
-	json_dict = {"fileList":[json_file]}
-	json_dict[json_file] = line_obj
-	
-	
-	context = {
-	           "img_file_1": img_file_1,
-		       "img_file_2": img_file_2,
-		       "jsonList": json_dict,
-		       "admin": admin,
-		       "images_obj": IMAGES.get_json_string_for_client(),
-		       "checking": checking_flag,
-		       "scroll_position": scroll_position,
-		       
-	          } 
-
-	add_log(admin, IMAGES, 'transcribe/transcribe')
-	request.session['admin'] = admin
-	request.session['images'] = IMAGES.get_json_string_for_client()
-	return HttpResponse(template.render(context, request))
-
-
+# This is the function used for transcriptions
 def transcribe_block(request, user_name="mehreen"):
 
 	# scroll position only important when saving. Client screen will jump to 
@@ -698,7 +533,7 @@ def transcribe_block(request, user_name="mehreen"):
 	
 	if images_json is None or admin is None:
 		admin = create_dummy_admin(task="transcribeBlock", 
-									error="Session interrupted in transcribe. Please reload page")		
+					   error="Session interrupted in transcribe. Please reload page")		
 		IMAGES = imageFiles()
 		request.session['admin'] = admin
 		request.session['images'] = IMAGES.get_json_string_for_client()
@@ -734,8 +569,8 @@ def transcribe_block(request, user_name="mehreen"):
 					  admin['to_check_user'])
 			add_log(admin, IMAGES, 'transcribeBlock/end')
 			return redirect(serve_homepage)
-		elif 'submit' in request.POST:
-			IMAGES, admin, page_json, options = load_from_transcribe_block_response(request, 'submit')      
+		elif 'submitForm' in request.POST:
+			IMAGES, admin, page_json, options = load_from_transcribe_block_response(request, 'submitForm')      
 			save_json(page_json, IMAGES.get_current(),
 					  admin['to_check_user'])
 			submit_done, return_error = submit_file(IMAGES.get_current(), admin)
@@ -891,11 +726,13 @@ def type_lines(request, user_name):
 	return redirect(transcribe)							
 
 def enter(request, user_name):
-	
+	USER_LIST, USER_FULLNAMES = get_user_list()
 	user = user_name.lower()
 	task = "transcribeblock"
+	user_fullname = user
+	if user in USER_FULLNAMES:
+	    user_fullname = USER_FULLNAMES[user]
 	
-
 	user_ind = get_index(user, USER_LIST)
 	if  user_ind == -1:
 		admin = create_dummy_admin(task="transcribeblock", 
@@ -914,8 +751,8 @@ def enter(request, user_name):
 	IMAGES.load_files_for_user(directory, user=user, task=task, 
 								path_to_add="datasets/" + user + '/')    
 	admin = {'user':user, 'task':"transcribeblock", 'to_check_user':user,
-								 'userInd': user_ind, 'toCheckUserInd':user_ind, 
-								 'taskInd': 5, 'error':""}	
+		'userInd': user_ind, 'toCheckUserInd':user_ind, 
+		'taskInd': 5, 'error':"", "user_fullname":user_fullname}	
 	request.session['admin'] = admin
 	request.session['images'] = IMAGES.get_json_string_for_client()
 	request.session['checkingMenu'] = 0
@@ -935,7 +772,7 @@ def enter(request, user_name):
 
 
 def check_homepage(request):
-
+	USER_LIST, USER_FULLNAMES = get_user_list()
 	task_ind = get_index("check", ADMIN_TASKS)
 	user_ind = 0
 	to_check_user_ind = 0
@@ -947,11 +784,16 @@ def check_homepage(request):
 		admin['taskInd'] = task_ind
 		request.session['admin'] = admin
 	else:
+		user = USER_LIST[user_ind].lower()
+		user_fullname = user
+		if user in USER_FULLNAMES:
+	    		user_fullname = USER_FULLNAMES[user]
 		request.session['admin'] = {'user':USER_LIST[user_ind].lower(), 
                                  'task':ADMIN_TASKS[task_ind ].lower(), 
                                  'to_check_user':USER_LIST[to_check_user_ind].lower(),
-								 'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
-								 'taskInd': task_ind, 'error':""}
+				 'userInd': user_ind, 'toCheckUserInd':to_check_user_ind, 
+				 'taskInd': task_ind, 'error':"", 
+				 "user_fullname":user_fullname}
 	request.session['checkingMenu'] = 1
 	return redirect(serve_homepage)
 
@@ -1017,80 +859,4 @@ def upload_file(request):
 	return HttpResponse(template.render(context, request))
 
 
-def view_edit_distance(request):
 
-	user = "mehreen"
-	user_ind = get_index("mehreen", USER_LIST)
-	task = "viewEditDistance"
-
-	images_json = request.session.get('images', None)
-	admin = request.session.get('admin', None)
-	
-	if images_json is None or admin is None:
-		directory = os.path.join(settings.STATIC_ROOT, "datasets/", user+'/')
-		IMAGES = imageFiles()
-	
-		IMAGES.load_files_for_user(directory, user=user, task="transcribeblock", 
-								path_to_add="datasets/" + user + '/')   
-
-	else:
-		IMAGES = imageFiles()
-		IMAGES.load_from_json_string(images_json)
-		
-	 
-	admin = {'user':user, 'task':"viewEditDistance", 'to_check_user':user,
-								 'userInd': user_ind, 'toCheckUserInd':user_ind, 
-								 'taskInd': get_index("viewEditDistance", ALL_TASKS), 'error':""}	
-	request.session['admin'] = admin
-	request.session['images'] = IMAGES.get_json_string_for_client()
-	request.session['checkingMenu'] = 0
-	
-
-
-
-	template = get_template('viewEditDistance.html')
-	if request.method == 'POST':
-		if 'previous' in request.POST:
-			
-			add_log(admin, IMAGES, 'viewEditDistance/previous')
-			filename = IMAGES.get_previous()
-		elif 'next' in request.POST:
-			
-			add_log(admin, IMAGES, 'viewEditDistance/next')
-			filename = IMAGES.get_next()
-		elif 'end' in request.POST:
-			IMAGES, admin, page_json, options = load_from_transcribe_block_response(request, 'end')      
-			save_json(page_json, IMAGES.get_current(),
-					  admin['to_check_user'])
-			add_log(admin, IMAGES, 'viewEditDistance/end')
-			return redirect(serve_homepage)
-
-            
-	if IMAGES.empty_files() == 1:
-		admin['error'] = 'Reached the end.'
-		request.session['admin'] = admin
-		request.session['images'] = IMAGES.get_json_string_for_client()
-		add_log(admin, IMAGES, 'viewEditDistance/noImages')
-		return redirect(serve_homepage)		
-
-
-	img_file = IMAGES.get_current()
-
-
-	json_file, line_obj = get_json_str_and_filename(img_file, admin)
-	json_dict = {"fileList":[json_file]}
-	json_dict[json_file] = line_obj
-	
-	
-	context = {
-	           "img_file": img_file,		       
-		       "jsonList": json_dict,
-		       "admin": admin,
-		       "images_obj": IMAGES.get_json_string_for_client(),
-		       "heading": APP_DISPALY_LABEL
-	          }
-	add_log(admin, IMAGES, 'viewEditDistance/viewEditDistance')
-	
-	request.session['admin'] = admin
-	request.session['images'] = IMAGES.get_json_string_for_client()
-	return HttpResponse(template.render(context, request))			

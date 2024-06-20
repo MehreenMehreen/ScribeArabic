@@ -33,7 +33,7 @@ def get_tag_list():
         tag_dictionary = {}
     return tag_dictionary
 
-views.USER_LIST = views.get_user_list()
+views.USER_LIST, views.USER_FULLNAMES = views.get_user_list()
 LOG_FILE = os.path.join(settings.STATIC_ROOT, 'LOG_TAGGING.txt')
 APP_DISPALY_LABEL = views.APP_DISPALY_LABEL
 #TAG_TASKS = ["viewTag", "tag"]
@@ -45,6 +45,7 @@ TAG_DICTIONARY = get_tag_list()
 
 
 def tag_home(request):	
+	USER_LIST, USER_FULLNAMES = views.get_user_list()
 	IMAGES = imageFiles()
 	# DEfaults	
 	task = "tag"
@@ -120,13 +121,17 @@ def tag_home(request):
 								   path_to_add=context["dir"], 
 							       select_files=context["filesList"])
 				request.session['images'] = IMAGES.get_json_string_for_client()
+				user_fullname = user_name
+				if user_name in USER_FULLNAMES:
+	    				user_fullname = USER_FULLNAMES[user_name]
 				request.session['adminTag'] = {'user': user_name, 
                                  'task': task, 
 								 'userInd': context["userInd"], 
 								 'taskInd': context["taskInd"], 'error':"", 'heading': APP_DISPALY_LABEL,
 								 'to_check_user':user_name,
 	 							 'toCheckUserInd':context["userInd"],
-	 							 'tagDictionary': context["tag_dictionary"]}
+	 							 'tagDictionary': context["tag_dictionary"],
+	 							 'user_fullname': user_fullname}
 
 
 				#print('context', context)
@@ -144,12 +149,16 @@ def tag_home(request):
     # Update admin_dict only
 	user_ind = context["userInd"]
 	task_ind = context["taskInd"] 
-	request.session['adminTag'] = {'user': views.USER_LIST[user_ind].lower(), 
-                                 'task': TAG_TASKS[task_ind ].lower(), 
-								 'userInd': user_ind, 
-								 'taskInd': task_ind, 'error':"", 'heading': APP_DISPALY_LABEL,
-								 'to_check_user':views.USER_LIST[user_ind].lower(),
-	 							 'toCheckUserInd':user_ind}
+	user_fullname = USER_LIST[user_ind].lower()
+	if user_fullname in USER_FULLNAMES:
+	    user_fullname = USER_FULLNAMES[user_fullname]
+	request.session['adminTag'] = {'user': USER_LIST[user_ind].lower(), 
+                                        'task': TAG_TASKS[task_ind ].lower(), 
+					 'userInd': user_ind, 
+					 'taskInd': task_ind, 'error':"", 'heading': APP_DISPALY_LABEL,
+					 'to_check_user':views.USER_LIST[user_ind].lower(),
+					 'toCheckUserInd':user_ind,
+					 'user_fullname': user_fullname}
 
 	request.session['images'] = IMAGES.get_json_string_for_client()
 
@@ -162,7 +171,7 @@ def tag_home(request):
 
 
 def tag_image(request):
-
+	USER_LIST, USER_FULLNAMES = views.get_user_list()
 	# scroll position only important when saving. Client screen will jump to 
 	# the saved scroll position
 	scroll_position = {"x": 0, "y": 0}
@@ -210,9 +219,9 @@ def tag_image(request):
 			save_tag_json(page_json, IMAGES.get_current(), json_file)
 			add_tag_log(admin, IMAGES, 'tagBlock/end')
 			return redirect(tag_home)
-		elif 'submit' in request.POST:
-			IMAGES, admin, page_json, options = views.load_from_transcribe_block_response(request, 'submit')      
-			json_file = json.loads(request.POST['submit'])['json_file']
+		elif 'submitForm' in request.POST:
+			IMAGES, admin, page_json, options = views.load_from_transcribe_block_response(request, 'submitForm')      
+			json_file = json.loads(request.POST['submitForm'])['json_file']
 			save_tag_json(page_json, IMAGES.get_current(), json_file)
 			submit_done, return_error = submit_tagged_file(page_json, IMAGES.get_current(), admin, json_file)
 			if not submit_done:
@@ -390,13 +399,12 @@ def get_json_files_for_tagging(img_file, admin):
 	# Make empty json if no json is present    
 	if len(json_file_list) == 0:
 		json_filename = base_file + '_annotate_' + admin['user'] + '.json'
-		json_dict = {'fileList': [json_filename], json_filename: {'json': {}, 
-																  'annotator': admin['user']}}
+		json_dict = {'fileList': [json_filename], json_filename: {'json': {}, 'annotator': admin['user']}}
 	return json_dict
 
 
 def tag(request, user_name):
-    
+    USER_LIST, USER_FULLNAMES = views.get_user_list()
     request.session['checkingMenu'] = 0
     user = user_name.lower()
     task = "tag"
@@ -413,7 +421,9 @@ def tag(request, user_name):
         add_tag_log(admin, IMAGES, 'tag/serve_homepage/error')
         return redirect(tag_home) 
 
-    
+    user_fullname = user
+    if user in USER_FULLNAMES:
+        user_fullname = USER_FULLNAMES[user]
     directory = os.path.join(settings.STATIC_ROOT, DATASET_PATH, user+'/')
     IMAGES = imageFiles()
     
@@ -421,8 +431,8 @@ def tag(request, user_name):
                                 path_to_add=DATASET_PATH + user + '/')    
 
     admin = {'user':user, 'task':"tag", 'to_check_user':user,
-                                 'userInd': user_ind, 'toCheckUserInd':user_ind, 
-                                 'taskInd': 0, 'error':""}    
+         'userInd': user_ind, 'toCheckUserInd':user_ind, 
+         'taskInd': 0, 'error':"", 'user_fullname': user_fullname}    
     request.session['adminTag'] = admin
     request.session['images'] = IMAGES.get_json_string_for_client()
     request.session['checkingMenu'] = 0

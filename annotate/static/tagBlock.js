@@ -238,6 +238,8 @@ class transcribeBlock extends manuscriptPage {
   	// This holds a map of all textboxes that link them to an index
   	// The index is the associated lineArray
   	this.textBoxMap = new Map();
+  	this.userType = "transcription_tagging";
+    	if (CHECKING) this.userType = "transcription_tagging_QA";  
   	
   }
 
@@ -413,11 +415,8 @@ getJsonString(submit=false, checked=false) {
       this.lineArray[i].copyTags(RIGHT_PAGE.lineArray[i].tagDict);
     }
     let linesJsonString = super.getJsonString(submit);
-    let jsonObject = JSON.parse(linesJsonString);
-    jsonObject['transcriber'] = ANNOTATOR;
-    jsonObject['taggingBy'] = ADMIN['user'];
-
-    return JSON.stringify(jsonObject);
+    
+    return linesJsonString;
   }  
   
 
@@ -1371,7 +1370,7 @@ function postViewForm(flag) {
 
 	if (flag < 1 || flag > 6)
         return;
-  let submit = false;
+  let submitForm = false;
   let checked = false;
 
   //Previous pressed
@@ -1398,8 +1397,8 @@ function postViewForm(flag) {
       }
     	// Submit clicked
     	else {
-	    	document.getElementById('tagInput').name='submit';
-      	submit = true;
+	    	document.getElementById('tagInput').name='submitForm';
+      	submitForm = true;
       }
       
   }
@@ -1427,7 +1426,7 @@ function postViewForm(flag) {
   let scrollPosition = getScrollPosition();
   let image_name = document.getElementById("rightImageName").innerHTML
   let jsonToPost = {"images_obj": IMAGES, "admin": ADMIN, 
-                     "page_json": LEFT_PAGE.getJsonString(submit, checked),
+                     "page_json": LEFT_PAGE.getJsonString(submitForm, checked),
                      "json_file": JSON_FILE,
                      "scroll_position": {"x": scrollPosition.x, "y": scrollPosition.y},
                      "options":options};
@@ -1470,13 +1469,8 @@ function makeDefaultSelections() {
     LEFT_PAGE.refreshManuscript();
     LEFT_PAGE.initializeLines(JSON_OBJ[filename]['json']);    
     RIGHT_PAGE.initializeLines(JSON_OBJ[filename]['json']);
-    //fill writer and comments
-    ANNOTATOR = JSON_OBJ[filename]['annotator'];
     JSON_FILE = filename;
-  	if ('writer' in JSON_OBJ[filename]['json'])
-  		writer.value = JSON_OBJ[filename]['json'].writer;
-  	if ('comment' in JSON_OBJ[filename]['json'])
-  		comment.value = JSON_OBJ[filename][['json']].comment
+
 
 }
 

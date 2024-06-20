@@ -224,11 +224,12 @@ class annotateBlock extends manuscriptPage {
 class transcribeBlock extends manuscriptPage {
   constructor(imageWidth, canvasId="imgCanvas", imageId="manuscript") {
     super(imageWidth, canvasId, imageId);
-  	this.textBoxArray = 0;  
+    this.textBoxArray = 0;  
   	// This holds a map of all textboxes that link them to an index
   	// The index is the associated lineArray
-  	this.textBoxMap = new Map();
-  	
+    this.textBoxMap = new Map();
+    this.userType = "transcriber";
+    if (CHECKING) this.userType = "transcription_QA";  	
   }
 
   getInputObject(minX, minY, maxX, maxY, canvasRect, angle=0, start_y=0) {
@@ -795,7 +796,7 @@ function postViewForm(flag) {
       }
     	// Submit clicked
     	else {
-	    	document.getElementById('transcribeInput').name='submit';
+	    	document.getElementById('transcribeInput').name='submitForm';
       	submit = true;
       }
       
@@ -867,11 +868,7 @@ function makeDefaultSelections() {
     LEFT_PAGE.initializeLines(JSON_OBJ[filename]);    
     RIGHT_PAGE.initializeLines(JSON_OBJ[filename]);
 
-    //fill writer and comments
-  	if ('writer' in JSON_OBJ[filename])
-  		writer.value = JSON_OBJ[filename].writer;
-  	if ('comment' in JSON_OBJ[filename])
-  		comment.value = JSON_OBJ[filename].comment
+ 
 
 }
 
