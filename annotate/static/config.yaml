@@ -1,6 +1,6 @@
 # User names
 # Make directories in settings.STATIC_ROOT/datasets folder with the same names
-user_list: ['Carlos', 'Georges', 'Father_Joseph', 'CarlosAI', 'GeorgesAI', 'Akram', 'Mehreen']
+user_list: ['Carlos', 'Georges', 'Father_Joseph', 'CarlosAI', 'GeorgesAI', 'Akram', 'Mehreen', 'moa', 'albatross']
 # for tags
 tag_dictionary: { 'Region_paragraph': 'rgba(128, 28, 255, 0.1)', 
                   'Region_heading': 'rgba(128, 28, 255, 0.1)', 
@@ -24,4 +24,4 @@ tag_dictionary: { 'Region_paragraph': 'rgba(128, 28, 255, 0.1)',
                   'Orient_bottom_top': 'rgba(128, 200, 28, 0.1)'
                 } 
  # Full names               
-user_fullnames: { 'carlos': 'Carlos Younes', 'georges': 'Georges Habchi', 'father_joseph': 'Joseph Moukarzel',  'carlosAI': 'Carlos Younes', 'georgesAI': 'Georges Habchi', 'akram': 'Akram Khater', 'mehreen': 'Mehreen Saeed'}
+user_fullnames: { 'carlos': 'Carlos Younes', 'georges': 'Georges Habchi', 'father_joseph': 'Joseph Moukarzel',  'carlosAI': 'Carlos Younes', 'georgesAI': 'Georges Habchi', 'akram': 'Akram Khater', 'mehreen': 'Mehreen Saeed', 'moa': 'moa', 'albatross': 'albatross'}
