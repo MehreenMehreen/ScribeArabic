@@ -1,5 +1,5 @@
 # ScribeArabic Annotation Software
-This is a repository for the ScribeArabic annotation software used for creating the [Muharaf dataset](https://github.com/MehreenMehreen/muharaf). 
+This is a repository for the ScribeArabic annotation software used for creating the [Muharaf dataset](https://github.com/MehreenMehreen/muharaf). See a demo of this software at [PythonAnywhere.com](https://neurips2024.pythonanywhere.com/tag/moa).
 
 ## About the scribeArabic software
 
